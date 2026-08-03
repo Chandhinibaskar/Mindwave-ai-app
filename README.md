@@ -51,25 +51,7 @@ Built with HTML, Tailwind-style CSS & Chart.js — Premium Glassmorphism UI
 | Fonts | Fraunces (display), Plus Jakarta Sans (body) |
 | UI/UX | Glassmorphism, animated gradients, breathing-orb motif, dark/light theming |
 
----
 
-## 🚀 Getting Started
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/<your-username>/mindwave-ai.git
-cd mindwave-ai
-```
-
-### 2. Run it ✅
-No build step required — it's a single static file.
-```bash
-# Option A: just open it
-open index.html
-
-# Option B: serve it locally
-npx serve .
-```
 
 ### 4. App Link
 ```
