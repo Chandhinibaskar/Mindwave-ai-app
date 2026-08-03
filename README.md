@@ -9,11 +9,15 @@ Built with HTML, Tailwind-style CSS & Chart.js — Premium Glassmorphism UI
 
 ## 🎬 App Preview
 
-| 🏠 Home | 🧠 Analyzer | 📅 Mood Tracker | 💬 AI Chat |
-|---|---|---|---|
-| Hero + live check-in | Emotion, risk & confidence | Calendar + trend graphs | Supportive chatbot |
+| 🏠 Home | 🧠 Analyzer |
+|---|---|
+| ![Home](home.png) | ![Analyzer](analyzer.png) |
 
----
+| 📅 Mood Tracker | 💬 AI Chat |
+|---|---|
+| ![Mood Tracker](tracker.png) | ![AI Chat](chat.png) |
+
+
 
 ## ✨ Key Features
 
@@ -34,9 +38,7 @@ Built with HTML, Tailwind-style CSS & Chart.js — Premium Glassmorphism UI
 - 🌗 **Dark / Light Mode** and 🌐 **English / Spanish / Hindi** UI
 - 👤 Sign-In / Sign-Up modal, About, Contact, and FAQ sections
 
-> No backend is wired up yet — authentication, mood history, and journal entries currently live in browser session state only. See [Roadmap](#️-roadmap).
 
----
 
 ## 🛠️ Tech Stack
 
@@ -73,8 +75,6 @@ npx serve .
 ```
 mindwaveaiapp.netlify.app
 ```
-
----
 
 ## 📁 Project Structure
 
