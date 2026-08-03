@@ -69,14 +69,9 @@ open index.html
 npx serve .
 ```
 
-### 3. Open Browser
-```
-http://localhost:3000
-```
-
 ### 4. App Link
 ```
-https://mindwave-ai-app.netlify.app
+mindwaveaiapp.netlify.app
 ```
 
 ---
