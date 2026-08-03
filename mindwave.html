@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mindwave — AI Mental Health Sentiment Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --teal:#0F6E6E;
+  --teal-light:#3FB8B0;
+  --lavender:#9B87F5;
+  --lavender-soft:#C9BEFA;
+  --sky:#5FA8E8;
+  --mint:#7FE0B8;
+  --bg:#F3F6F8;
+  --bg2:#FFFFFF;
+  --surface: rgba(255,255,255,0.6);
+  --surface-solid:#FFFFFF;
+  --border: rgba(15,110,110,0.14);
+  --text:#122428;
+  --text-soft:#4C6167;
+  --shadow: 0 20px 50px -20px rgba(15,110,110,0.25);
+}
+[data-theme="dark"]{
+  --bg:#0A1418;
+  --bg2:#0E1C21;
+  --surface: rgba(20,38,42,0.55);
+  --surface-solid:#122228;
+  --border: rgba(159,230,216,0.14);
+  --text:#EAF6F4;
+  --text-soft:#9FBAB8;
+  --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  font-family:'Plus Jakarta Sans', sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(127,224,184,0.20), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, rgba(155,135,245,0.20), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  transition:background .4s ease, color .4s ease;
+  min-height:100vh;
+}
+h1,h2,h3,.display{font-family:'Fraunces', serif;}
+::selection{background:var(--lavender-soft); color:#12222a;}
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+.glass{
+  background:var(--surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow: var(--shadow);
+}
+.container{max-width:1180px; margin:0 auto; padding:0 22px;}
+
+/* NAV */
+nav.top{
+  position:sticky; top:0; z-index:60;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{max-width:1180px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:14px;}
+.logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:19px;}
+.logo-mark{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--teal),var(--lavender)); position:relative; flex-shrink:0;}
+.logo-mark::after{content:""; position:absolute; inset:8px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff, var(--mint)); animation:pulse 3s ease-in-out infinite;}
+.navlinks{display:flex; gap:4px; flex-wrap:wrap;}
+.navlinks button{
+  background:none; border:none; padding:8px 14px; border-radius:999px; font-size:14.5px; font-weight:600; color:var(--text-soft);
+  transition:.25s;
+}
+.navlinks button:hover{color:var(--text); background:var(--surface);}
+.navlinks button.active{color:#fff; background:linear-gradient(135deg,var(--teal),var(--teal-light));}
+.navright{display:flex; align-items:center; gap:10px;}
+.iconbtn{
+  width:40px; height:40px; border-radius:12px; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:17px;
+}
+.pillbtn{
+  padding:10px 18px; border-radius:999px; border:none; font-weight:700; font-size:14px;
+  background:linear-gradient(135deg,var(--teal),var(--lavender)); color:#fff; box-shadow:0 10px 24px -10px rgba(15,110,110,0.55);
+}
+.ghostbtn{padding:10px 16px; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-weight:600; font-size:14px; color:var(--text);}
+
+/* mobile nav toggle */
+.hamburger{display:none;}
+@media (max-width:920px){
+  .navlinks{display:none; position:absolute; top:64px; left:0; right:0; background:var(--bg2); flex-direction:column; padding:10px; border-bottom:1px solid var(--border);}
+  .navlinks.open{display:flex;}
+  .hamburger{display:flex;}
+}
+
+.page{display:none; animation:fadein .5s ease;}
+.page.active{display:block;}
+@keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+/* HERO */
+.hero{padding:70px 0 40px; position:relative; overflow:hidden;}
+.hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:50px; align-items:center;}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr;} .hero{padding-top:36px;}}
+.eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--teal); background:rgba(15,110,110,0.1); padding:7px 14px; border-radius:999px; margin-bottom:18px;}
+[data-theme="dark"] .eyebrow{color:var(--mint); background:rgba(127,224,184,0.12);}
+.hero h1{font-size:clamp(34px,5vw,58px); line-height:1.05; font-weight:600; margin:0 0 18px; letter-spacing:-0.01em;}
+.hero h1 em{font-style:italic; background:linear-gradient(120deg,var(--teal),var(--lavender)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.hero p.lead{font-size:17px; color:var(--text-soft); max-width:520px; margin-bottom:28px; line-height:1.65;}
+.hero-cta{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:34px;}
+
+/* breathing orb */
+.orb-wrap{position:relative; display:flex; align-items:center; justify-content:center; height:420px;}
+.orb{
+  width:230px; height:230px; border-radius:50%;
+  background:conic-gradient(from 180deg, var(--teal), var(--sky), var(--lavender), var(--mint), var(--teal));
+  filter:blur(0.5px);
+  animation:breathe 6s ease-in-out infinite;
+  box-shadow:0 0 90px 10px rgba(95,168,232,0.35);
+}
+.orb-core{
+  position:absolute; width:230px; height:230px; border-radius:50%;
+  background:var(--bg); opacity:0.86;
+  animation:breathe 6s ease-in-out infinite;
+}
+.orb-ring{position:absolute; border-radius:50%; border:1px solid var(--border); animation:breathe 6s ease-in-out infinite;}
+.ring1{width:300px; height:300px;}
+.ring2{width:370px; height:370px; animation-delay:.3s;}
+@keyframes breathe{
+  0%,100%{transform:scale(0.86);}
+  50%{transform:scale(1.05);}
+}
+.orb-label{position:absolute; text-align:center; font-size:13px; font-weight:700; color:var(--text-soft); letter-spacing:.05em; text-transform:uppercase;}
+
+/* input box */
+.feel-box{padding:26px; margin-top:6px;}
+.feel-box textarea{
+  width:100%; min-height:100px; resize:vertical; border:1px solid var(--border); border-radius:16px; padding:16px;
+  background:var(--surface-solid); color:var(--text); font-family:inherit; font-size:15px; outline:none;
+}
+.feel-box textarea:focus{border-color:var(--teal-light);}
+.feel-actions{display:flex; align-items:center; justify-content:space-between; margin-top:14px; gap:10px; flex-wrap:wrap;}
+.mic-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border); background:var(--surface-solid); font-size:17px;}
+.mic-btn.listening{background:linear-gradient(135deg,#ff8a8a,#ff5c5c); color:#fff; animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.12);}}
+
+/* stat grid */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:56px 0;}
+@media (max-width:800px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat-card{padding:22px; text-align:center;}
+.stat-num{font-family:'Fraunces',serif; font-size:34px; font-weight:600; background:linear-gradient(120deg,var(--teal),var(--lavender)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.stat-label{font-size:13px; color:var(--text-soft); margin-top:4px; font-weight:600;}
+
+/* section heading */
+.section-head{max-width:640px; margin:0 auto 34px; text-align:center;}
+.section-head h2{font-size:clamp(26px,3.4vw,38px); font-weight:600; margin:0 0 10px;}
+.section-head p{color:var(--text-soft); font-size:15.5px; line-height:1.6;}
+.section{padding:64px 0;}
+
+/* cards grid generic */
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+@media (max-width:900px){.grid-3{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;}}
+.card{padding:26px;}
+.card h3{margin:0 0 8px; font-size:19px;}
+.card p{color:var(--text-soft); font-size:14.5px; line-height:1.6; margin:0;}
+
+/* testimonials */
+.testi{padding:22px; font-size:14.5px; color:var(--text-soft); line-height:1.6;}
+.testi .who{margin-top:14px; font-weight:700; color:var(--text); font-size:13.5px;}
+
+/* Analyzer page */
+.analyzer-wrap{display:grid; grid-template-columns:1.1fr .9fr; gap:24px;}
+@media (max-width:960px){.analyzer-wrap{grid-template-columns:1fr;}}
+.emotion-chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+.emotion-chip{padding:7px 13px; border-radius:999px; font-size:12.5px; font-weight:700; border:1px solid var(--border); color:var(--text-soft);}
+.emotion-chip.active{color:#fff; border-color:transparent;}
+.result-emoji{font-size:52px; line-height:1;}
+.gauge-wrap{position:relative; width:190px; height:190px; margin:0 auto;}
+.gauge-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.gauge-num{font-family:'Fraunces',serif; font-size:30px; font-weight:600;}
+.gauge-sub{font-size:11px; color:var(--text-soft); font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+.progress-row{display:flex; align-items:center; gap:10px; margin:10px 0;}
+.progress-track{flex:1; height:9px; border-radius:999px; background:var(--border); overflow:hidden;}
+.progress-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--teal),var(--lavender));}
+
+.badge-risk{display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; font-weight:700; font-size:13px;}
+
+/* calendar */
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:16px;}
+.cal-day{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:var(--text-soft); border:1px solid var(--border); cursor:pointer;}
+.cal-day.mood{color:#fff; border-color:transparent;}
+.cal-dow{font-size:11px; text-align:center; color:var(--text-soft); font-weight:700;}
+
+/* breathing exercise self care */
+.breath-circle-wrap{display:flex; align-items:center; justify-content:center; height:220px;}
+.breath-circle{width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--mint),var(--sky)); display:flex; align-items:center; justify-content:center; color:#08312c; font-weight:800; font-size:13px; text-align:center; transition:transform 4s ease-in-out;}
+
+/* chat */
+.chat-window{height:420px; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:12px;}
+.msg{max-width:76%; padding:11px 15px; border-radius:16px; font-size:14.5px; line-height:1.5;}
+.msg.bot{align-self:flex-start; background:var(--surface-solid); border:1px solid var(--border); border-bottom-left-radius:4px;}
+.msg.user{align-self:flex-end; background:linear-gradient(135deg,var(--teal),var(--lavender)); color:#fff; border-bottom-right-radius:4px;}
+.chat-input-row{display:flex; gap:10px; padding:14px; border-top:1px solid var(--border);}
+.chat-input-row input{flex:1; border:1px solid var(--border); border-radius:12px; padding:11px 14px; background:var(--surface-solid); color:var(--text); font-family:inherit; outline:none;}
+
+/* dashboard */
+.dash-top{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+@media (max-width:900px){.dash-top{grid-template-columns:repeat(2,1fr);}}
+.achieve{display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; border:1px solid var(--border);}
+.achieve .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--mint),var(--teal)); display:flex; align-items:center; justify-content:center; font-size:18px;}
+
+/* footer */
+footer{padding:50px 0 30px; text-align:center; color:var(--text-soft); font-size:13.5px; border-top:1px solid var(--border); margin-top:40px;}
+
+/* crisis floating */
+.crisis-fab{
+  position:fixed; bottom:22px; right:22px; z-index:70;
+  background:linear-gradient(135deg,#ff7a7a,#ff5c5c); color:#fff; border:none; border-radius:999px; padding:13px 18px; font-weight:800; font-size:13.5px;
+  box-shadow:0 14px 30px -8px rgba(255,90,90,0.6); display:flex; align-items:center; gap:8px;
+}
+.modal-bg{position:fixed; inset:0; background:rgba(6,14,16,0.55); backdrop-filter:blur(4px); z-index:90; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-bg.open{display:flex;}
+.modal-card{max-width:440px; width:100%; padding:28px; max-height:85vh; overflow-y:auto;}
+
+/* toggle switch */
+.switch{position:relative; width:46px; height:26px; border-radius:999px; background:var(--border); border:none;}
+.switch::after{content:""; position:absolute; width:20px; height:20px; border-radius:50%; background:#fff; top:3px; left:3px; transition:.25s;}
+.switch.on{background:linear-gradient(135deg,var(--teal),var(--lavender));}
+.switch.on::after{left:23px;}
+
+.form-field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+.form-field label{font-size:13px; font-weight:700; color:var(--text-soft);}
+.form-field input,.form-field select{border:1px solid var(--border); border-radius:12px; padding:11px 13px; background:var(--surface-solid); color:var(--text); font-family:inherit; outline:none;}
+
+.faq-item{padding:18px 22px; margin-bottom:12px; cursor:pointer;}
+.faq-q{display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:15px;}
+.faq-a{max-height:0; overflow:hidden; transition:.3s; font-size:14px; color:var(--text-soft); line-height:1.6;}
+.faq-item.open .faq-a{max-height:200px; margin-top:10px;}
+
+.tag-lang{padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface-solid); color:var(--text); font-family:inherit;}
+</style>
+</head>
+<body data-theme="light">
+
+<nav class="top">
+  <div class="nav-inner">
+    <div class="logo"><div class="logo-mark"></div> Mindwave</div>
+    <button class="iconbtn hamburger" onclick="document.querySelector('.navlinks').classList.toggle('open')">☰</button>
+    <div class="navlinks" id="navlinks">
+      <button data-nav="home" class="active">Home</button>
+      <button data-nav="analyzer">Analyzer</button>
+      <button data-nav="tracker">Mood Tracker</button>
+      <button data-nav="selfcare">Self-Care</button>
+      <button data-nav="chat">AI Chat</button>
+      <button data-nav="dashboard">Dashboard</button>
+      <button data-nav="about">About</button>
+      <button data-nav="contact">Contact / FAQ</button>
+    </div>
+    <div class="navright">
+      <select id="langSel" class="tag-lang" style="display:none" onchange="setLang(this.value)">
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+        <option value="hi">HI</option>
+      </select>
+      <button class="iconbtn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+      <button class="ghostbtn" onclick="openModal('authModal')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HOME -->
+<section class="page active" id="page-home">
+ <div class="container hero">
+  <div class="hero-grid">
+    <div>
+      <span class="eyebrow">● AI-Powered Emotional Wellness</span>
+      <h1>Understand your mind, <em>one feeling</em> at a time.</h1>
+      <p class="lead">Mindwave listens to how you write and speak, and reflects it back with clarity — emotion detection, stress scoring, and gentle guidance grounded in real self-care practice.</p>
+      <div class="hero-cta">
+        <button class="pillbtn" onclick="go('analyzer')">Analyze My Emotion →</button>
+        <button class="ghostbtn" onclick="go('tracker')">See Mood Tracker</button>
+      </div>
+      <div class="glass feel-box" style="max-width:560px;">
+        <label style="font-weight:700; font-size:14px;">How are you feeling today?</label>
+        <textarea id="homeInput" placeholder="Write a few sentences about your day, your worries, or what's on your mind..."></textarea>
+        <div class="feel-actions">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="mic-btn" id="homeMic" onclick="startVoice('homeInput', this)">🎙️</button>
+            <span style="font-size:12.5px; color:var(--text-soft);">or speak your mood</span>
+          </div>
+          <button class="pillbtn" onclick="analyzeFromHome()">Analyze Emotion</button>
+        </div>
+      </div>
+    </div>
+    <div class="orb-wrap">
+      <div class="orb-ring ring2"></div>
+      <div class="orb-ring ring1"></div>
+      <div class="orb"></div>
+      <div class="orb-core"></div>
+      <div class="orb-label" id="homeOrbLabel">breathe<br>in · out</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="glass stat-card"><div class="stat-num" data-count="128000">0</div><div class="stat-label">Check-ins analyzed</div></div>
+    <div class="glass stat-card"><div class="stat-num" data-count="94">0</div><div class="stat-label">% felt understood</div></div>
+    <div class="glass stat-card"><div class="stat-num" data-count="9">0</div><div class="stat-label">Emotions detected</div></div>
+    <div class="glass stat-card"><div class="stat-num" data-count="24">0</div><div class="stat-label">/7 support available</div></div>
+  </div>
+ </div>
+
+ <div class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>A calmer way to check in with yourself</h2>
+      <p>Every tool here is built around one idea: naming a feeling is the first step to caring for it.</p>
+    </div>
+    <div class="grid-3">
+      <div class="glass card"><h3>🧠 Emotion Detection</h3><p>NLP-driven analysis reads tone and word choice to identify happiness, anxiety, stress, sadness, anger, and more — with a confidence score.</p></div>
+      <div class="glass card"><h3>📈 Mood Trends</h3><p>Daily check-ins build a personal trend line, so you can see patterns across weeks and months, not just single moments.</p></div>
+      <div class="glass card"><h3>🌿 Guided Self-Care</h3><p>Breathing exercises, meditation timers, and journaling prompts suggested based on how you're actually feeling right now.</p></div>
+    </div>
+  </div>
+ </div>
+
+ <div class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head"><h2>What people are saying</h2></div>
+    <div class="grid-3">
+      <div class="glass testi">"Writing a few lines before bed and seeing the trend line helped me notice my stress spikes every Sunday night."<div class="who">— Early user, Product Designer</div></div>
+      <div class="glass testi">"The breathing exercise timer during a panic moment actually talked me down. Simple, but it worked."<div class="who">— Early user, Student</div></div>
+      <div class="glass testi">"I like that anonymous mode exists. I could be honest without worrying who sees it."<div class="who">— Early user, Nurse</div></div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ANALYZER -->
+<section class="page" id="page-analyzer">
+ <div class="container section">
+  <div class="section-head"><h2>Sentiment Analyzer</h2><p>Describe how you feel in your own words. Our model detects emotion, confidence, and a mental-health risk score.</p></div>
+  <div class="analyzer-wrap">
+    <div class="glass card">
+      <label style="font-weight:700; font-size:14px;">Tell me what's going on</label>
+      <textarea id="anaInput" style="width:100%; min-height:140px; margin-top:10px; border:1px solid var(--border); border-radius:16px; padding:16px; background:var(--surface-solid); color:var(--text); font-family:inherit; font-size:15px; outline:none;" placeholder="e.g. I've had a really overwhelming week, I can't sleep and keep worrying about work..."></textarea>
+      <div class="feel-actions">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="mic-btn" id="anaMic" onclick="startVoice('anaInput', this)">🎙️</button>
+          <select class="tag-lang" onchange="anaLangHint(this.value)">
+            <option>English</option><option>Español</option><option>हिन्दी</option><option>Français</option>
+          </select>
+        </div>
+        <button class="pillbtn" onclick="runAnalysis()">Analyze Emotion</button>
+      </div>
+      <div id="anaResult" style="margin-top:22px; display:none;">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <div class="result-emoji" id="resultEmoji">😊</div>
+          <div>
+            <div style="font-size:22px; font-weight:700;" id="resultLabel">Calm</div>
+            <div id="resultBadge" class="badge-risk">Low risk</div>
+          </div>
+        </div>
+        <div class="emotion-chip-row" id="emotionChips"></div>
+        <div style="margin-top:18px; padding:16px; border-radius:14px; background:var(--surface-solid); border:1px solid var(--border);">
+          <strong style="font-size:13.5px;">AI reflection</strong>
+          <p id="aiFeedback" style="margin:8px 0 0; color:var(--text-soft); font-size:14.5px; line-height:1.6;"></p>
+        </div>
+      </div>
+    </div>
+    <div class="glass card">
+      <h3 style="margin-bottom:2px;">Risk & Confidence</h3>
+      <div class="gauge-wrap"><canvas id="gaugeChart"></canvas>
+        <div class="gauge-center"><div class="gauge-num" id="gaugeNum">--</div><div class="gauge-sub">risk score</div></div>
+      </div>
+      <div style="margin-top:18px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700;"><span>Confidence</span><span id="confVal">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="confBar" style="width:0%"></div></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700;"><span>Stress level</span><span id="stressVal">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="stressBar" style="width:0%; background:linear-gradient(90deg,#ffb27a,#ff5c5c);"></div></div>
+      </div>
+      <p style="font-size:12px; color:var(--text-soft); margin-top:16px; line-height:1.6;">This is an automated reflection, not a clinical diagnosis. If you're in distress, please use the crisis support button in the corner.</p>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- TRACKER -->
+<section class="page" id="page-tracker">
+ <div class="container section">
+  <div class="section-head"><h2>Mood Tracker</h2><p>Log a daily mood and watch your emotional trend unfold over weeks and months.</p></div>
+  <div class="grid-2">
+    <div class="glass card">
+      <h3>This month</h3>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; font-size:11.5px; color:var(--text-soft);">
+        <span>😊 Happy</span><span>😌 Calm</span><span>😟 Anxious</span><span>😢 Sad</span><span>😠 Angry</span><span>😩 Stressed</span>
+      </div>
+      <div style="margin-top:18px;">
+        <label style="font-size:13px; font-weight:700;">Log today's mood</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;" id="moodPicker"></div>
+      </div>
+    </div>
+    <div class="glass card">
+      <h3>Weekly / Monthly Trend</h3>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <button class="ghostbtn" onclick="renderTrend('week')" id="trendWeekBtn">Weekly</button>
+        <button class="ghostbtn" onclick="renderTrend('month')" id="trendMonthBtn">Monthly</button>
+      </div>
+      <canvas id="trendChart" height="220"></canvas>
+      <p style="font-size:12.5px; color:var(--text-soft); margin-top:12px;">AI insight: your mood tends to dip mid-week and lift on weekends — consider scheduling a short walk on Wednesdays.</p>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- SELF CARE -->
+<section class="page" id="page-selfcare">
+ <div class="container section">
+  <div class="section-head"><h2>Self-Care Resources</h2><p>Personalized suggestions to help you reset — breathing, meditation, journaling, and daily wellness basics.</p></div>
+  <div class="grid-2">
+    <div class="glass card">
+      <h3>🌬️ Breathing Exercise</h3>
+      <p>Follow the circle. Inhale as it grows, exhale as it shrinks.</p>
+      <div class="breath-circle-wrap"><div class="breath-circle" id="breathCircle">Start</div></div>
+      <div style="text-align:center;"><button class="pillbtn" onclick="toggleBreathing()" id="breathBtn">Start breathing</button></div>
+    </div>
+    <div class="glass card">
+      <h3>🧘 Meditation Timer</h3>
+      <p>Pick a duration and sit quietly with yourself.</p>
+      <div style="display:flex; gap:8px; margin:14px 0;">
+        <button class="ghostbtn" onclick="setMedTime(2)">2 min</button>
+        <button class="ghostbtn" onclick="setMedTime(5)">5 min</button>
+        <button class="ghostbtn" onclick="setMedTime(10)">10 min</button>
+      </div>
+      <div style="text-align:center; font-family:'Fraunces',serif; font-size:44px; margin:14px 0;" id="medDisplay">05:00</div>
+      <div style="text-align:center;"><button class="pillbtn" onclick="toggleMeditation()" id="medBtn">Start</button></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:20px;">
+    <div class="glass card">
+      <h3>📓 Journal</h3>
+      <textarea id="journalInput" style="width:100%; min-height:120px; border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface-solid); color:var(--text); font-family:inherit;" placeholder="Write freely about your day..."></textarea>
+      <button class="pillbtn" style="margin-top:12px;" onclick="summarizeJournal()">Get AI Summary</button>
+      <p id="journalSummary" style="margin-top:12px; font-size:14px; color:var(--text-soft); line-height:1.6;"></p>
+    </div>
+    <div class="glass card">
+      <h3>💡 Daily Motivation</h3>
+      <p id="quoteText" style="font-family:'Fraunces',serif; font-style:italic; font-size:18px; line-height:1.5;">"Feelings are visitors. Let them come and go."</p>
+      <button class="ghostbtn" onclick="newQuote()">New quote</button>
+      <h3 style="margin-top:24px;">💧 Daily Wellness</h3>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-soft);">
+        <div>💧 Hydration — 8 glasses of water today</div>
+        <div>😴 Sleep — aim for 7–9 hours tonight</div>
+        <div>🚶 Movement — a 10 minute walk resets your nervous system</div>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- CHAT -->
+<section class="page" id="page-chat">
+ <div class="container section">
+  <div class="section-head"><h2>AI Chat Assistant</h2><p>A supportive space to talk through what's on your mind. Not a replacement for professional care.</p></div>
+  <div class="glass" style="max-width:640px; margin:0 auto;">
+    <div class="chat-window" id="chatWindow">
+      <div class="msg bot">Hi, I'm here with you. What's on your mind today?</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="Type how you're feeling..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="pillbtn" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- DASHBOARD -->
+<section class="page" id="page-dashboard">
+ <div class="container section">
+  <div class="section-head"><h2>Your Dashboard</h2><p>An overview of your mood history, insights, and streaks.</p></div>
+  <div class="dash-top">
+    <div class="glass stat-card"><div class="stat-num" id="dashLogs">12</div><div class="stat-label">Check-ins logged</div></div>
+    <div class="glass stat-card"><div class="stat-num" id="dashStreak">4</div><div class="stat-label">Day streak 🔥</div></div>
+    <div class="glass stat-card"><div class="stat-num" id="dashAvgRisk">Low</div><div class="stat-label">Avg. risk level</div></div>
+    <div class="glass stat-card"><div class="stat-num" id="dashTopMood">Calm</div><div class="stat-label">Most common mood</div></div>
+  </div>
+  <div class="grid-2" style="margin-top:20px;">
+    <div class="glass card">
+      <h3>Recent check-ins</h3>
+      <div id="dashHistory" style="display:flex; flex-direction:column; gap:10px; margin-top:10px; font-size:14px;"></div>
+    </div>
+    <div class="glass card">
+      <h3>Achievements</h3>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+        <div class="achieve"><div class="ic">🔥</div><div><strong>4-day streak</strong><div style="font-size:12.5px; color:var(--text-soft);">Checked in 4 days in a row</div></div></div>
+        <div class="achieve"><div class="ic">🌬️</div><div><strong>First breath</strong><div style="font-size:12.5px; color:var(--text-soft);">Completed a breathing exercise</div></div></div>
+        <div class="achieve"><div class="ic">📓</div><div><strong>Journal starter</strong><div style="font-size:12.5px; color:var(--text-soft);">Wrote your first journal entry</div></div></div>
+      </div>
+      <button class="pillbtn" style="margin-top:18px; width:100%;" onclick="exportPDF()">Export mood report (PDF)</button>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+        <span style="font-size:13.5px; font-weight:700;">Anonymous mode</span>
+        <button class="switch" id="anonSwitch" onclick="this.classList.toggle('on')"></button>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ABOUT -->
+<section class="page" id="page-about">
+ <div class="container section">
+  <div class="section-head"><h2>About Mindwave</h2><p>Built to make emotional self-awareness a five-minute daily habit, not a clinical chore.</p></div>
+  <div class="grid-3">
+    <div class="glass card"><h3>Our approach</h3><p>We combine NLP emotion detection with evidence-informed self-care practices — breathing, journaling, and trend awareness — to help you notice patterns early.</p></div>
+    <div class="glass card"><h3>Not a replacement</h3><p>Mindwave supports reflection. It does not diagnose or treat any condition, and always defers to licensed professionals and crisis services for urgent needs.</p></div>
+    <div class="glass card"><h3>Privacy first</h3><p>Anonymous mode, encrypted storage, and no sharing of personal journal content — your data stays yours.</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- CONTACT / FAQ -->
+<section class="page" id="page-contact">
+ <div class="container section">
+  <div class="section-head"><h2>Contact & FAQ</h2></div>
+  <div class="grid-2">
+    <div class="glass card">
+      <h3>Send a message</h3>
+      <div class="form-field"><label>Name</label><input placeholder="Your name"></div>
+      <div class="form-field"><label>Email</label><input placeholder="you@example.com"></div>
+      <div class="form-field"><label>Message</label><input placeholder="How can we help?"></div>
+      <button class="pillbtn" onclick="alert('Thanks — this is a prototype, message not actually sent.')">Send message</button>
+    </div>
+    <div>
+      <div class="glass faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Is my data private? <span>+</span></div><div class="faq-a">Yes. Anonymous mode and encrypted storage keep your entries private by default.</div></div>
+      <div class="glass faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Is this a diagnosis tool? <span>+</span></div><div class="faq-a">No. Mindwave offers reflective insight, not medical diagnosis. Please consult a professional for clinical concerns.</div></div>
+      <div class="glass faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">What languages are supported? <span>+</span></div><div class="faq-a">The interface supports English, Spanish, and Hindi, with more planned.</div></div>
+      <div class="glass faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Can I export my mood history? <span>+</span></div><div class="faq-a">Yes, from the Dashboard you can export a PDF mood report anytime.</div></div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<footer>
+  <div class="container">Mindwave — a supportive space, not a substitute for professional care. © 2026</div>
+</footer>
+
+<!-- crisis fab -->
+<button class="crisis-fab" onclick="openModal('crisisModal')">🆘 Crisis Help</button>
+
+<div class="modal-bg" id="crisisModal">
+  <div class="glass modal-card">
+    <h3 style="margin-top:0;">You're not alone</h3>
+    <p style="color:var(--text-soft); font-size:14.5px; line-height:1.6;">If you are in immediate danger, please contact local emergency services right away.</p>
+    <p style="font-size:14.5px; line-height:1.7;">
+      🇺🇸 US: Call or text <strong>988</strong> (Suicide & Crisis Lifeline)<br>
+      🇬🇧 UK: Call <strong>116 123</strong> (Samaritans)<br>
+      🌍 International: <a href="https://findahelpline.com" target="_blank" style="color:var(--teal);">findahelpline.com</a>
+    </p>
+    <button class="pillbtn" style="width:100%; margin-top:10px;" onclick="closeModal('crisisModal')">Close</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="authModal">
+  <div class="glass modal-card">
+    <h3 style="margin-top:0;">Welcome to Mindwave</h3>
+    <div class="form-field"><label>Email</label><input placeholder="you@example.com"></div>
+    <div class="form-field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+    <button class="pillbtn" style="width:100%;" onclick="closeModal('authModal')">Log in</button>
+    <p style="text-align:center; font-size:13px; color:var(--text-soft); margin-top:12px;">This is a UI prototype — no account is actually created.</p>
+  </div>
+</div>
+
+<script>
+/* ---------- NAV ---------- */
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===id));
+  document.querySelector('.navlinks').classList.remove('open');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(id==='tracker') setTimeout(()=>{buildCalendar(); renderTrend('week');},50);
+  if(id==='dashboard') setTimeout(renderDashboard,50);
+}
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.nav)));
+
+/* ---------- THEME ---------- */
+function toggleTheme(){
+  const body=document.body;
+  const dark = body.getAttribute('data-theme')==='dark';
+  body.setAttribute('data-theme', dark? 'light':'dark');
+  document.getElementById('themeBtn').textContent = dark? '🌙':'☀️';
+}
+
+/* ---------- STATS COUNT UP ---------- */
+function animateStats(){
+  document.querySelectorAll('.stat-num[data-count]').forEach(el=>{
+    const target=+el.dataset.count; let cur=0; const step=Math.max(1,target/60);
+    const iv=setInterval(()=>{ cur+=step; if(cur>=target){cur=target; clearInterval(iv);} el.textContent=Math.floor(cur).toLocaleString(); },20);
+  });
+}
+animateStats();
+
+/* ---------- SENTIMENT ENGINE (client-side simulated NLP) ---------- */
+const LEXICON = {
+  Happy:{emoji:'😊', color:'#F5B94D', words:['happy','great','good','joy','excited','awesome','glad','love','wonderful','fantastic','grateful']},
+  Excited:{emoji:'🤩', color:'#FF9F5A', words:['excited','thrilled','can\'t wait','pumped','amazing','yay']},
+  Calm:{emoji:'😌', color:'#7FE0B8', words:['calm','relaxed','peaceful','fine','okay','content','steady']},
+  Anxious:{emoji:'😟', color:'#9B87F5', words:['anxious','worried','nervous','overwhelmed','panic','scared','afraid','uneasy']},
+  Sad:{emoji:'😢', color:'#5FA8E8', words:['sad','down','crying','lonely','hurt','upset','miss','empty']},
+  Angry:{emoji:'😠', color:'#E85B5B', words:['angry','mad','furious','frustrated','annoyed','irritated','hate']},
+  Stressed:{emoji:'😩', color:'#FF7A7A', words:['stressed','stress','pressure','deadline','exhausted','busy','burnt out','burned out']},
+  Depressed:{emoji:'😔', color:'#6B7CA6', words:['depressed','hopeless','worthless','numb','can\'t go on','no point','give up']},
+  Neutral:{emoji:'😐', color:'#9AA7AC', words:[]}
+};
+const CRISIS_WORDS=['suicide','kill myself','end it all','want to die','self harm','self-harm','hurt myself'];
+
+function analyzeText(text){
+  const lower=text.toLowerCase();
+  let scores={}; let total=0;
+  Object.keys(LEXICON).forEach(k=>scores[k]=0);
+  Object.entries(LEXICON).forEach(([emo,data])=>{
+    data.words.forEach(w=>{ if(lower.includes(w)){ scores[emo]+=1; total+=1; } });
+  });
+  let crisis = CRISIS_WORDS.some(w=>lower.includes(w));
+  let top='Neutral', max=0;
+  Object.entries(scores).forEach(([k,v])=>{ if(v>max){max=v; top=k;} });
+  if(total===0){ top='Neutral'; }
+  const confidence = total===0? 55 : Math.min(97, 60+total*9);
+  let stress = 20;
+  if(['Stressed','Anxious','Depressed','Angry'].includes(top)) stress = Math.min(95, 45+max*14);
+  if(crisis) stress = 96;
+  let risk = crisis? 92 : (['Depressed','Stressed','Anxious'].includes(top)? Math.min(85,35+max*12) : (top==='Angry'||top==='Sad'? 30+max*8 : 12));
+  return {top, scores, confidence, stress, risk, crisis, wordHits:total};
+}
+
+function feedbackFor(top, crisis){
+  if(crisis) return "It sounds like you're carrying something very heavy right now. Please reach out to the crisis resources below — you deserve real, immediate support, and you don't have to go through this alone.";
+  const map={
+    Happy:"It's lovely to see this lightness in your words. Savor it — maybe write down what contributed to it today.",
+    Excited:"That energy is wonderful. Channel it into something you've been wanting to start.",
+    Calm:"You sound grounded right now. This is a great moment to lock in a small, steady routine.",
+    Anxious:"Your mind sounds like it's racing. Try the 4-7-8 breathing exercise in Self-Care — it can bring your nervous system back down.",
+    Sad:"It's okay to feel this. Be gentle with yourself today, and consider journaling what's underneath the sadness.",
+    Angry:"That frustration is valid. Before reacting, try a short walk or a few slow breaths to create some space.",
+    Stressed:"You're carrying a lot right now. Try breaking today's tasks into three small, doable pieces, and take a five-minute breathing break.",
+    Depressed:"Thank you for naming this. These feelings are real and heavy — please consider talking to someone you trust or a professional soon.",
+    Neutral:"Thanks for checking in — even a neutral moment is worth noticing. How's your body feeling right now?"
+  };
+  return map[top]||map.Neutral;
+}
+
+function renderAnalysis(text, target){
+  const r = analyzeText(text);
+  target.style.display='block';
+  document.getElementById('resultEmoji').textContent = LEXICON[r.top].emoji;
+  document.getElementById('resultLabel').textContent = r.top;
+  const badge=document.getElementById('resultBadge');
+  const riskLevel = r.risk>70?'High risk':r.risk>40?'Moderate risk':'Low risk';
+  badge.textContent=riskLevel;
+  badge.style.background = r.risk>70?'#ffe1e1':(r.risk>40?'#fff2d9':'#e2f7ee');
+  badge.style.color = r.risk>70?'#c22b2b':(r.risk>40?'#8a5a00':'#0f6e4a');
+
+  const chips=document.getElementById('emotionChips'); chips.innerHTML='';
+  Object.keys(LEXICON).forEach(k=>{
+    const c=document.createElement('span'); c.className='emotion-chip'+(k===r.top?' active':'');
+    c.style.background = k===r.top? LEXICON[k].color : 'transparent';
+    c.textContent = LEXICON[k].emoji+' '+k;
+    chips.appendChild(c);
+  });
+  document.getElementById('aiFeedback').textContent = feedbackFor(r.top, r.crisis);
+  document.getElementById('confVal').textContent = r.confidence+'%';
+  document.getElementById('confBar').style.width = r.confidence+'%';
+  document.getElementById('stressVal').textContent = r.stress+'%';
+  document.getElementById('stressBar').style.width = r.stress+'%';
+  document.getElementById('gaugeNum').textContent = r.risk;
+  drawGauge(r.risk);
+  if(r.crisis) openModal('crisisModal');
+  return r;
+}
+
+let gaugeChart;
+function drawGauge(val){
+  const ctx=document.getElementById('gaugeChart');
+  const color = val>70? '#E85B5B' : val>40? '#F5B94D' : '#7FE0B8';
+  if(gaugeChart) gaugeChart.destroy();
+  gaugeChart=new Chart(ctx,{type:'doughnut', data:{datasets:[{data:[val,100-val], backgroundColor:[color,'rgba(150,150,150,0.15)'], borderWidth:0}]}, options:{cutout:'78%', rotation:-90, circumference:180, plugins:{legend:{display:false}, tooltip:{enabled:false}}}});
+}
+
+function runAnalysis(){
+  const text=document.getElementById('anaInput').value.trim();
+  if(!text){ alert('Please write a little about how you feel first.'); return; }
+  renderAnalysis(text, document.getElementById('anaResult'));
+}
+function analyzeFromHome(){
+  const text=document.getElementById('homeInput').value.trim();
+  if(!text){ alert('Please write a little about how you feel first.'); return; }
+  document.getElementById('anaInput').value=text;
+  go('analyzer');
+  setTimeout(()=>runAnalysis(),200);
+}
+function anaLangHint(){ /* UI-only language selector for the analyzer's placeholder context */ }
+
+/* ---------- VOICE ---------- */
+function startVoice(inputId, btn){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('Voice recognition is not supported in this browser.'); return; }
+  const rec = new SR();
+  rec.lang='en-US'; rec.interimResults=false;
+  btn.classList.add('listening');
+  rec.start();
+  rec.onresult=(e)=>{
+    const text=e.results[0][0].transcript;
+    const el=document.getElementById(inputId);
+    el.value = (el.value? el.value+' ':'') + text;
+  };
+  rec.onend=()=>btn.classList.remove('listening');
+  rec.onerror=()=>btn.classList.remove('listening');
+}
+
+/* ---------- LANGUAGE (simple UI i18n demo) ---------- */
+const I18N={
+  en:{lead:"Mindwave listens to how you write and speak, and reflects it back with clarity."},
+  es:{lead:"Mindwave escucha cómo escribes y hablas, y te lo refleja con claridad."},
+  hi:{lead:"Mindwave यह सुनता है कि आप कैसे लिखते और बोलते हैं, और इसे स्पष्टता से आपके सामने रखता है।"}
+};
+function setLang(code){
+  document.querySelector('.hero p.lead').textContent = I18N[code].lead;
+}
+document.getElementById('langSel').style.display='inline-block';
+
+/* ---------- MODALS ---------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+/* ---------- MOOD TRACKER ---------- */
+const MOODS=[
+  {k:'Happy', e:'😊', c:'#F5B94D'}, {k:'Calm', e:'😌', c:'#7FE0B8'}, {k:'Anxious', e:'😟', c:'#9B87F5'},
+  {k:'Sad', e:'😢', c:'#5FA8E8'}, {k:'Angry', e:'😠', c:'#E85B5B'}, {k:'Stressed', e:'😩', c:'#FF7A7A'}
+];
+let moodLog = {}; // day -> mood key
+(function seed(){
+  const days=new Date().getDate();
+  for(let i=1;i<=days;i++){ if(Math.random()>0.35) moodLog[i]=MOODS[Math.floor(Math.random()*MOODS.length)].k; }
+})();
+
+function buildCalendar(){
+  const dowEl=document.getElementById('calDow'); dowEl.innerHTML='';
+  ['S','M','T','W','T','F','S'].forEach(d=>{ const el=document.createElement('div'); el.className='cal-dow'; el.textContent=d; dowEl.appendChild(el); });
+  const grid=document.getElementById('calGrid'); grid.innerHTML='';
+  const now=new Date(); const first=new Date(now.getFullYear(), now.getMonth(),1).getDay();
+  const daysInMonth=new Date(now.getFullYear(), now.getMonth()+1,0).getDate();
+  for(let i=0;i<first;i++){ const e=document.createElement('div'); grid.appendChild(e); }
+  for(let d=1; d<=daysInMonth; d++){
+    const el=document.createElement('div'); el.className='cal-day'; el.textContent=d;
+    const mk=moodLog[d];
+    if(mk){ const m=MOODS.find(x=>x.k===mk); el.classList.add('mood'); el.style.background=m.c; el.title=mk; el.textContent=m.e; }
+    el.onclick=()=>{ openMoodPickerFor(d, el); };
+    grid.appendChild(el);
+  }
+}
+function openMoodPickerFor(day, el){
+  const pick=prompt('Log mood for day '+day+': '+MOODS.map(m=>m.k).join(', '));
+  if(pick){ const found=MOODS.find(m=>m.k.toLowerCase()===pick.toLowerCase()); if(found){ moodLog[day]=found.k; buildCalendar(); } }
+}
+const picker=document.getElementById('moodPicker');
+MOODS.forEach(m=>{
+  const b=document.createElement('button'); b.className='ghostbtn'; b.textContent=m.e+' '+m.k;
+  b.onclick=()=>{ const today=new Date().getDate(); moodLog[today]=m.k; buildCalendar(); alert('Logged "'+m.k+'" for today.'); };
+  picker.appendChild(b);
+});
+
+let trendChart;
+function renderTrend(range){
+  document.getElementById('trendWeekBtn').classList.toggle('active', range==='week');
+  document.getElementById('trendMonthBtn').classList.toggle('active', range==='month');
+  const ctx=document.getElementById('trendChart');
+  const n = range==='week'?7:30;
+  const labels=[]; const data=[];
+  for(let i=n;i>0;i--){ labels.push(range==='week'? 'D-'+i : (i%5===0? 'D-'+i:'')); data.push(20+Math.round(Math.random()*60)); }
+  if(trendChart) trendChart.destroy();
+  trendChart=new Chart(ctx,{type:'line', data:{labels, datasets:[{label:'Wellbeing score', data, borderColor:'#0F6E6E', backgroundColor:'rgba(155,135,245,0.18)', fill:true, tension:0.4, pointRadius:0, borderWidth:2.5}]},
+    options:{plugins:{legend:{display:false}}, scales:{y:{min:0,max:100, grid:{color:'rgba(150,150,150,0.12)'}}, x:{grid:{display:false}}}}});
+}
+
+/* ---------- SELF CARE: BREATHING ---------- */
+let breathing=false, breathTimer;
+function toggleBreathing(){
+  const circle=document.getElementById('breathCircle'); const btn=document.getElementById('breathBtn');
+  breathing=!breathing;
+  if(breathing){
+    btn.textContent='Stop';
+    let phase='in';
+    circle.style.transform='scale(1.6)'; circle.textContent='Inhale...';
+    breathTimer=setInterval(()=>{
+      phase = phase==='in'?'out':'in';
+      circle.style.transform = phase==='in'? 'scale(1.6)':'scale(1)';
+      circle.textContent = phase==='in'? 'Inhale...':'Exhale...';
+    },4000);
+  } else {
+    btn.textContent='Start breathing'; clearInterval(breathTimer); circle.style.transform='scale(1)'; circle.textContent='Start';
+  }
+}
+
+/* ---------- MEDITATION TIMER ---------- */
+let medSeconds=300, medRunning=false, medInterval;
+function setMedTime(min){ medSeconds=min*60; updateMedDisplay(); if(medRunning) toggleMeditation(); }
+function updateMedDisplay(){ const m=String(Math.floor(medSeconds/60)).padStart(2,'0'); const s=String(medSeconds%60).padStart(2,'0'); document.getElementById('medDisplay').textContent=m+':'+s; }
+function toggleMeditation(){
+  medRunning=!medRunning; const btn=document.getElementById('medBtn');
+  if(medRunning){
+    btn.textContent='Pause';
+    medInterval=setInterval(()=>{
+      if(medSeconds<=0){ clearInterval(medInterval); medRunning=false; btn.textContent='Start'; alert('Session complete. Well done.'); return; }
+      medSeconds--; updateMedDisplay();
+    },1000);
+  } else { btn.textContent='Start'; clearInterval(medInterval); }
+}
+updateMedDisplay();
+
+/* ---------- JOURNAL AI SUMMARY ---------- */
+function summarizeJournal(){
+  const text=document.getElementById('journalInput').value.trim();
+  if(!text){ alert('Write a journal entry first.'); return; }
+  const r=analyzeText(text);
+  document.getElementById('journalSummary').textContent =
+    'Summary: your entry leans toward "'+r.top+'" ('+r.confidence+'% confidence). '+feedbackFor(r.top, r.crisis);
+}
+
+/* ---------- QUOTES ---------- */
+const QUOTES=[
+  '"Feelings are visitors. Let them come and go."',
+  "\"You don't have to control your thoughts. You just have to stop letting them control you.\"",
+  '"Almost everything will work again if you unplug it for a few minutes, including you."',
+  '"Progress, not perfection."',
+  '"This feeling is real, and it is also temporary."'
+];
+function newQuote(){ document.getElementById('quoteText').textContent = QUOTES[Math.floor(Math.random()*QUOTES.length)]; }
+
+/* ---------- CHAT ---------- */
+function sendChat(){
+  const input=document.getElementById('chatInput'); const text=input.value.trim();
+  if(!text) return;
+  const win=document.getElementById('chatWindow');
+  const u=document.createElement('div'); u.className='msg user'; u.textContent=text; win.appendChild(u);
+  input.value='';
+  win.scrollTop=win.scrollHeight;
+  setTimeout(()=>{
+    const r=analyzeText(text);
+    const b=document.createElement('div'); b.className='msg bot';
+    b.textContent = feedbackFor(r.top, r.crisis);
+    win.appendChild(b); win.scrollTop=win.scrollHeight;
+    if(r.crisis) openModal('crisisModal');
+  },500);
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  const hist=document.getElementById('dashHistory'); hist.innerHTML='';
+  const entries=Object.entries(moodLog).sort((a,b)=>b[0]-a[0]).slice(0,6);
+  entries.forEach(([day,mood])=>{
+    const m=MOODS.find(x=>x.k===mood)||{e:'😐'};
+    const row=document.createElement('div');
+    row.style.cssText='display:flex; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:12px;';
+    row.innerHTML='<span>'+m.e+' '+mood+'</span><span style="color:var(--text-soft); font-size:12.5px;">Day '+day+'</span>';
+    hist.appendChild(row);
+  });
+  document.getElementById('dashLogs').textContent = Object.keys(moodLog).length;
+}
+
+/* ---------- PDF EXPORT ---------- */
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(18); doc.text('Mindwave — Mood Report', 20, 20);
+  doc.setFontSize(11); doc.text('Generated: '+new Date().toDateString(), 20, 28);
+  let y=42;
+  doc.setFontSize(13); doc.text('Recent mood log:', 20, y); y+=8;
+  doc.setFontSize(11);
+  Object.entries(moodLog).sort((a,b)=>a[0]-b[0]).forEach(([day,mood])=>{
+    doc.text('Day '+day+':  '+mood, 24, y); y+=7;
+    if(y>270){ doc.addPage(); y=20; }
+  });
+  doc.save('mindwave-mood-report.pdf');
+}
+
+/* init */
+buildCalendar();
+renderTrend('week');
+</script>
+</body>
+</html>
